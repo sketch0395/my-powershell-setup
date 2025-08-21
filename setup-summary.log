@@ -1,0 +1,69 @@
+Windows Automated Setup Summary
+Generated: 08/21/2025 12:51:58
+
+Selected Categories: E, D, C, S
+
+Installed Applications:
+- PowerShell 7 (Microsoft.PowerShell)
+- PowerToys (Microsoft.PowerToys)
+- 7-Zip (7zip.7zip)
+- VLC Media Player (VideoLAN.VLC)
+- TreeSize Free (JAMSoftware.TreeSize.Free)
+- Obsidian (Obsidian.Obsidian)
+- Visual Studio Code (Microsoft.VisualStudioCode)
+- Git (Git.Git)
+- Windows Terminal (Microsoft.WindowsTerminal)
+- Firefox Developer Edition (Mozilla.Firefox.DeveloperEdition)
+- GitHub Desktop (GitHub.GitHubDesktop)
+- Docker Desktop (Docker.DockerDesktop)
+- Node.js (OpenJS.NodeJS)
+- Python 3.11 (Python.Python.3.11)
+- Postman (Postman.Postman)
+- Notepad++ (Notepad++.Notepad++)
+- Chocolatey (Chocolatey.Chocolatey)
+- Ubuntu WSL Distribution
+- Figma (Figma.Figma)
+- OBS Studio (OBSProject.OBSStudio)
+- GIMP (GIMP.GIMP)
+- Discord (Discord.Discord)
+- Malwarebytes (Malwarebytes.Malwarebytes)
+- Wireshark (WiresharkFoundation.Wireshark)
+- Nmap (Insecure.Nmap)
+- OpenVPN Connect (OpenVPNTechnologies.OpenVPNConnect)
+- Kali Linux WSL Distribution
+
+Enabled Windows Features:
+- Microsoft-hyper-v
+- HypervisorPlatform
+- VirtualMachinePlatform
+- Microsoft-Windows-Subsystem-Linux
+
+WSL Status:
+- WSL installed and configured
+
+Power Settings Configured:
+- Monitor timeout (AC): Never
+- Monitor timeout (DC): 10 minutes
+- Standby timeout (AC): Never
+- Standby timeout (DC): Never
+
+System Customizations Applied:
+- Dark mode enabled
+- File Explorer enhancements (show extensions, hidden files)
+- Taskbar modifications (hide search, task view)
+- Windows bloatware removed
+- OpenSSH Client and Server enabled
+
+
+Global npm Packages:
+- npm (latest)
+- next (latest)
+
+Kali Linux Tools:
+- kali-tools-web (if configured)
+
+Next Steps Required:
+1. Restart computer
+2. Launch and configure any installed WSL distributions
+3. Configure Git credentials (if Developer category selected)
+4. Start Docker Desktop

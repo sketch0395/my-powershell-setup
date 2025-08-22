@@ -1,67 +1,20 @@
-#Requires -RunAsAdministrator
-
-<#
-.SYNOPSIS
-    Automated Windows Computer Setup Script
-    
-.DESCRIPTION
-    This PowerShell script automates the setup of a Windows development environment including:
-    - PowerShell 7 and Windows Terminal installation
-    - Windows Features (Hyper-V, WSL, Virtual Machine Platform)
-    - WSL setup with Kali Linux and Ubuntu distributions
-    - Power configuration settings
-    - Development tools (VS Code, Git, GitHub Desktop, Docker, Node.js, Obsidian)
-    - Kali Linux tools installation
-    
-.NOTES
-    Author: Generated for automated computer s# =============================================================================
-# SECTION 5: Configure Power Settings
-# =============================================================================ugust 21, 2025
-    Requires: Administrator privileges
-    
-.EXAMPLE
-    .\Setup-Automation.ps1
-    Runs the complete automated setup process
-#>
-
-# Function to log output with timestamps
-function Write-Log {
-    param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $(
-        switch ($Level) {
-            "INFO" { "Green" }
-            "WARN" { "Yellow" }
-            "ERROR" { "Red" }
-            default { "White" }
-        }
-    )
-}
-
-# Function to check if command succeeded
+# =====================
+# UTILITY FUNCTIONS (MUST BE FIRST)
+# =====================
 function Test-CommandSuccess {
-    param([int]$ExitCode, [string]$CommandName)
+    param(
+        [int]$ExitCode,
+        [string]$Action = "Command"
+    )
     if ($ExitCode -eq 0) {
-        Write-Log "✓ $CommandName completed successfully" "INFO"
+        Write-Log "$Action succeeded." "INFO"
         return $true
     } else {
-        Write-Log "✗ $CommandName failed with exit code: $ExitCode" "ERROR"
+        Write-Log "$Action failed with exit code $ExitCode." "ERROR"
         return $false
     }
 }
 
-# Function to check if a package is already installed via winget
-function Test-WingetPackageInstalled {
-    param([string]$PackageId)
-    try {
-        $result = winget list --id $PackageId --exact 2>$null
-        return $LASTEXITCODE -eq 0
-    } catch {
-        return $false
-    }
-}
-
-# Function to check if WSL is installed and configured
 function Test-WSLInstalled {
     try {
         $wslVersion = wsl --status 2>$null
@@ -70,6 +23,287 @@ function Test-WSLInstalled {
         return $false
     }
 }
+
+# =====================
+# PIN TO TASKBAR FUNCTION
+# =====================
+function Add-AppToTaskbar {
+    param(
+        [string]$AppName,
+        [string]$ExecutablePath
+    )
+    try {
+        # Check if the executable exists
+        if (Test-Path $ExecutablePath) {
+            # Create a shortcut object
+            $Shell = New-Object -ComObject Shell.Application
+            $Folder = $Shell.Namespace((Split-Path $ExecutablePath))
+            $Item = $Folder.ParseName((Split-Path $ExecutablePath -Leaf))
+            
+            # Get the context menu and find "Pin to taskbar" option
+            $Verbs = $Item.Verbs()
+            $PinVerb = $Verbs | Where-Object { $_.Name -match "Pin to taskbar" -or $_.Name -match "taskbar" }
+            
+            if ($PinVerb) {
+                $PinVerb.DoIt()
+                Write-Log "Successfully pinned $AppName to taskbar" "INFO"
+                return $true
+            } else {
+                Write-Log "Could not find 'Pin to taskbar' option for $AppName" "WARN"
+                return $false
+            }
+        } else {
+            Write-Log "Executable not found: $ExecutablePath" "WARN"
+            return $false
+        }
+    } catch {
+        Write-Log "Failed to pin $AppName to taskbar: $($_.Exception.Message)" "ERROR"
+        return $false
+    }
+}
+
+function Add-InstalledAppsToTaskbar {
+    param([array]$SelectedCategories)
+    
+    Write-Log "Configuring taskbar pins for installed applications..." "INFO"
+    
+    # Define common application paths and their display names
+    $AppPaths = @{
+        "Visual Studio Code" = @(
+            "${env:LOCALAPPDATA}\Programs\Microsoft VS Code\Code.exe",
+            "${env:ProgramFiles}\Microsoft VS Code\Code.exe"
+        )
+        "Windows Terminal" = @(
+            "${env:LOCALAPPDATA}\Microsoft\WindowsApps\wt.exe"
+        )
+        "GitHub Desktop" = @(
+            "${env:LOCALAPPDATA}\GitHubDesktop\GitHubDesktop.exe"
+        )
+        "Docker Desktop" = @(
+            "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
+        )
+        "Firefox Developer Edition" = @(
+            "${env:ProgramFiles}\Firefox Developer Edition\firefox.exe"
+        )
+        "Obsidian" = @(
+            "${env:LOCALAPPDATA}\Programs\Obsidian\Obsidian.exe"
+        )
+        "Discord" = @(
+            "${env:LOCALAPPDATA}\Discord\app-*\Discord.exe"
+        )
+        "PowerToys" = @(
+            "${env:LOCALAPPDATA}\Microsoft\PowerToys\PowerToys.exe",
+            "${env:ProgramFiles}\PowerToys\PowerToys.exe"
+        )
+        "Burp Suite Community" = @(
+            "${env:LOCALAPPDATA}\Programs\BurpSuiteCommunity\BurpSuiteCommunity.exe"
+        )
+        "OWASP ZAP" = @(
+            "${env:ProgramFiles}\ZAP\Zed Attack Proxy\zap.exe"
+        )
+        "Bitwarden" = @(
+            "${env:LOCALAPPDATA}\Programs\Bitwarden\Bitwarden.exe"
+        )
+        "VeraCrypt" = @(
+            "${env:ProgramFiles}\VeraCrypt\VeraCrypt.exe"
+        )
+        "Wireshark" = @(
+            "${env:ProgramFiles}\Wireshark\Wireshark.exe"
+        )
+    }
+    
+    # Essential category apps
+    if ('E' -in $SelectedCategories) {
+        foreach ($app in @("PowerToys", "Obsidian")) {
+            if ($AppPaths.ContainsKey($app)) {
+                foreach ($path in $AppPaths[$app]) {
+                    $resolvedPath = if ($path -like "*\app-*\*") {
+                        # Handle Discord's versioned folder structure
+                        $basePath = Split-Path $path
+                        $executable = Split-Path $path -Leaf
+                        $versionFolders = Get-ChildItem $basePath -Directory | Where-Object { $_.Name -like "app-*" } | Sort-Object Name -Descending
+                        if ($versionFolders) {
+                            Join-Path $versionFolders[0].FullName $executable
+                        } else {
+                            $null
+                        }
+                    } else {
+                        $path
+                    }
+                    
+                    if ($resolvedPath -and (Test-Path $resolvedPath)) {
+                        Add-AppToTaskbar $app $resolvedPath
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
+    # Developer category apps
+    if ('D' -in $SelectedCategories) {
+        foreach ($app in @("Visual Studio Code", "Windows Terminal", "GitHub Desktop", "Docker Desktop", "Firefox Developer Edition")) {
+            if ($AppPaths.ContainsKey($app)) {
+                foreach ($path in $AppPaths[$app]) {
+                    if (Test-Path $path) {
+                        Add-AppToTaskbar $app $path
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
+    # Creative category apps
+    if ('C' -in $SelectedCategories) {
+        foreach ($app in @("Discord")) {
+            if ($AppPaths.ContainsKey($app)) {
+                foreach ($path in $AppPaths[$app]) {
+                    $resolvedPath = if ($path -like "*\app-*\*") {
+                        # Handle Discord's versioned folder structure
+                        $basePath = Split-Path $path
+                        $executable = Split-Path $path -Leaf
+                        $versionFolders = Get-ChildItem $basePath -Directory | Where-Object { $_.Name -like "app-*" } | Sort-Object Name -Descending
+                        if ($versionFolders) {
+                            Join-Path $versionFolders[0].FullName $executable
+                        } else {
+                            $null
+                        }
+                    } else {
+                        $path
+                    }
+                    
+                    if ($resolvedPath -and (Test-Path $resolvedPath)) {
+                        Add-AppToTaskbar $app $resolvedPath
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
+    # Security category apps
+    if ('S' -in $SelectedCategories) {
+        foreach ($app in @("Burp Suite Community", "OWASP ZAP", "Bitwarden", "VeraCrypt", "Wireshark")) {
+            if ($AppPaths.ContainsKey($app)) {
+                foreach ($path in $AppPaths[$app]) {
+                    if (Test-Path $path) {
+                        Add-AppToTaskbar $app $path
+                        break
+                    }
+                }
+            }
+        }
+    }
+}
+# =====================
+# CHECK IF WINGET PACKAGE IS INSTALLED
+# =====================
+function Test-WingetPackageInstalled {
+    param(
+        [string]$PackageId
+    )
+    try {
+        $result = winget list --id $PackageId 2>$null
+        return ($result -match $PackageId)
+    } catch {
+        return $false
+    }
+}
+
+# =====================
+# YES/NO PROMPT FUNCTION (MUST BE FIRST)
+# =====================
+function Get-YesNo {
+    param(
+        [string]$Prompt,
+        [bool]$Default = $true
+    )
+    $defaultText = if ($Default) { '[Y/n]' } else { '[y/N]' }
+    while ($true) {
+        $input = Read-Host "$Prompt $defaultText"
+        if ([string]::IsNullOrWhiteSpace($input)) {
+            return $Default
+        }
+        switch ($input.ToLower()) {
+            'y' { return $true }
+            'n' { return $false }
+            default { Write-Host "Please enter 'y' or 'n'." -ForegroundColor Yellow }
+        }
+    }
+}
+
+# =====================
+# FUNCTION DEFINITIONS (MUST BE FIRST)
+# =====================
+function Write-Log {
+    param(
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    $color = switch ($Level) {
+        "INFO" { "Green" }
+        "WARN" { "Yellow" }
+        "ERROR" { "Red" }
+        default { "White" }
+    }
+    Write-Host "[$Level] $Message" -ForegroundColor $color
+}
+
+function Get-CategoryChoices {
+    Write-Host ""
+    Write-Host "========== INSTALLATION CATEGORIES ==========" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Select the categories you want to install:" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "[E] Essential      - Core utilities (PowerToys, 7-Zip, VLC, TreeSize, Obsidian)" -ForegroundColor White
+    Write-Host "[D] Developer      - Programming tools (VS Code, Firefox Dev, Windows Terminal, Git, Docker)" -ForegroundColor White
+    Write-Host "[C] Creative       - Media & design tools (Figma, OBS Studio, GIMP, Discord)" -ForegroundColor White
+    Write-Host "[S] Security       - Privacy & security tools (Malwarebytes, Wireshark, Burp Suite, Bitwarden, VeraCrypt)" -ForegroundColor White
+    Write-Host "[A] All Categories - Install everything" -ForegroundColor Green
+    Write-Host "[N] None           - Skip category installation" -ForegroundColor Red
+    Write-Host ""
+    $validChoices = @('E', 'D', 'C', 'S', 'A', 'N')
+    $selectedCategories = @()
+    do {
+        $choice = Read-Host "Enter categories (e.g., 'EDC' for Essential+Developer+Creative) or single choice"
+        $choice = $choice.ToUpper()
+        if ($choice -eq 'A') {
+            $selectedCategories = @('E', 'D', 'C', 'S')
+            break
+        } elseif ($choice -eq 'N') {
+            $selectedCategories = @()
+            break
+        } else {
+            $selectedCategories = $choice.ToCharArray() | Where-Object { $_ -in $validChoices }
+            if ($selectedCategories.Count -gt 0) {
+                break
+            }
+        }
+        Write-Host "Invalid choice. Please enter valid category letters (E, D, C, S, A, or N)" -ForegroundColor Red
+    } while ($true)
+    return $selectedCategories
+}
+
+function Get-PowerTimeout {
+    param(
+        [string]$Prompt,
+        [int]$Default
+    )
+    $input = Read-Host "$Prompt [$Default]"
+    if ([string]::IsNullOrWhiteSpace($input)) {
+        return $Default
+    }
+    if ($input -match '^[0-9]+$') {
+        return [int]$input
+    } else {
+        Write-Host "Invalid input. Using default: $Default" -ForegroundColor Yellow
+        return $Default
+    }
+}
+
+
+
 
 # Function to check if a WSL distribution is installed
 function Test-WSLDistributionInstalled {
@@ -152,117 +386,312 @@ function Get-CategoryChoices {
 
 # Function to enable OpenSSH
 function Enable-OpenSSH {
-    Write-Log "Enabling OpenSSH Client and Server..." "INFO"
-    
-    # Enable OpenSSH Client
-    $sshClient = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*'
-    if ($sshClient.State -ne "Installed") {
-        Add-WindowsCapability -Online -Name $sshClient.Name
-        Test-CommandSuccess $LASTEXITCODE "OpenSSH Client Installation"
-    } else {
-        Write-Log "OpenSSH Client already installed" "INFO"
+    if (-not $EnableOpenSSHClient -and -not $EnableOpenSSHServer) {
+        Write-Log "Skipping OpenSSH Client and Server per user choice" "INFO"
+        return
     }
-    
+    Write-Log "Enabling OpenSSH Client and Server..." "INFO"
+    # Enable OpenSSH Client
+    if ($EnableOpenSSHClient) {
+        $sshClient = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*'
+        if ($sshClient.State -ne "Installed") {
+            Add-WindowsCapability -Online -Name $sshClient.Name
+            Test-CommandSuccess $LASTEXITCODE "OpenSSH Client Installation"
+        } else {
+            Write-Log "OpenSSH Client already installed" "INFO"
+        }
+    }
     # Enable OpenSSH Server
-    $sshServer = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
-    if ($sshServer.State -ne "Installed") {
-        Add-WindowsCapability -Online -Name $sshServer.Name
-        Test-CommandSuccess $LASTEXITCODE "OpenSSH Server Installation"
-        
-        # Start and enable SSH service
-        Start-Service sshd
-        Set-Service -Name sshd -StartupType 'Automatic'
-        Test-CommandSuccess $LASTEXITCODE "OpenSSH Service Configuration"
-    } else {
-        Write-Log "OpenSSH Server already installed" "INFO"
+    if ($EnableOpenSSHServer) {
+        $sshServer = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
+        if ($sshServer.State -ne "Installed") {
+            Add-WindowsCapability -Online -Name $sshServer.Name
+            Test-CommandSuccess $LASTEXITCODE "OpenSSH Server Installation"
+            # Start and enable SSH service
+            Start-Service sshd
+            Set-Service -Name sshd -StartupType 'Automatic'
+            Test-CommandSuccess $LASTEXITCODE "OpenSSH Service Configuration"
+        } else {
+            Write-Log "OpenSSH Server already installed" "INFO"
+        }
     }
 }
+
+# Prompt user for bloatware removal (Yes/No)
+$RemoveBloatware = Get-YesNo 'Remove default bloatware apps?' $true
 
 # Function to remove Windows bloatware
 function Remove-WindowsBloatware {
     Write-Log "Removing Windows bloatware..." "INFO"
+    if (-not $RemoveBloatware) {
+        Write-Log "Bloatware removal skipped per user choice." "INFO"
+        return
+    }
     
+    # Comprehensive list of bloatware apps with wildcards for better matching
     $bloatwareApps = @(
-        "Microsoft.XboxApp",
-        "Microsoft.XboxGameOverlay",
-        "Microsoft.XboxGamingOverlay",
-        "Microsoft.XboxIdentityProvider",
-        "Microsoft.XboxSpeechToTextOverlay",
-        "Microsoft.Xbox.TCUI",
-        "Microsoft.BingWeather",
-        "Microsoft.GetHelp",
-        "Microsoft.Getstarted",
-        "Microsoft.Messaging",
-        "Microsoft.Microsoft3DViewer",
-        "Microsoft.MicrosoftOfficeHub",
-        "Microsoft.MicrosoftSolitaireCollection",
-        "Microsoft.NetworkSpeedTest",
-        "Microsoft.News",
-        "Microsoft.Office.Lens",
-        "Microsoft.Office.OneNote",
-        "Microsoft.Office.Sway",
-        "Microsoft.OneConnect",
-        "Microsoft.People",
-        "Microsoft.Print3D",
-        "Microsoft.RemoteDesktop",
-        "Microsoft.SkypeApp",
-        "Microsoft.StorePurchaseApp",
-        "Microsoft.Office.Todo.List",
-        "Microsoft.Whiteboard",
-        "Microsoft.WindowsAlarms",
-        "Microsoft.WindowsCamera",
-        "microsoft.windowscommunicationsapps",
-        "Microsoft.WindowsFeedbackHub",
-        "Microsoft.WindowsMaps",
-        "Microsoft.WindowsSoundRecorder",
-        "Microsoft.YourPhone",
-        "Microsoft.ZuneMusic",
-        "Microsoft.ZuneVideo"
+        # Xbox and Gaming
+        "*Xbox*",
+        "*Microsoft.GamingApp*",
+        "*Microsoft.XboxSpeechToTextOverlay*",
+        "*Microsoft.XboxApp*",
+        "*Microsoft.XboxGameOverlay*",
+        "*Microsoft.XboxGamingOverlay*",
+        "*Microsoft.XboxIdentityProvider*",
+        "*Microsoft.Xbox.TCUI*",
+        
+        # Microsoft Store and Office apps
+        "*Microsoft.SkypeApp*",
+        "*Microsoft.MicrosoftOfficeHub*",
+        "*Microsoft.Office.OneNote*",
+        "*Microsoft.Office.Sway*",
+        "*Microsoft.Office.Lens*",
+        "*Microsoft.Office.Todo.List*",
+        
+        # Media and Entertainment
+        "*Microsoft.ZuneMusic*",
+        "*Microsoft.ZuneVideo*",
+        "*Microsoft.Movies*",
+        "*Microsoft.Music*",
+        "*SpotifyAB.SpotifyMusic*",
+        "*Disney*",
+        "*Netflix*",
+        
+        # News and Weather
+        "*Microsoft.BingWeather*",
+        "*Microsoft.BingNews*",
+        "*Microsoft.News*",
+        "*Microsoft.BingFinance*",
+        "*Microsoft.BingSports*",
+        
+        # Social and Communication
+        "*Microsoft.People*",
+        "*Microsoft.Messaging*",
+        "*Microsoft.YourPhone*",
+        "*Microsoft.WindowsCommunicationsApps*",
+        "*microsoft.windowscommunicationsapps*",
+        
+        # Productivity and Tools
+        "*Microsoft.Whiteboard*",
+        "*Microsoft.OneConnect*",
+        "*Microsoft.Print3D*",
+        "*Microsoft.Microsoft3DViewer*",
+        "*Microsoft.MixedReality.Portal*",
+        
+        # Windows Accessories
+        "*Microsoft.WindowsAlarms*",
+        "*Microsoft.WindowsCamera*",
+        "*Microsoft.WindowsMaps*",
+        "*Microsoft.WindowsSoundRecorder*",
+        "*Microsoft.WindowsFeedbackHub*",
+        "*Microsoft.Getstarted*",
+        "*Microsoft.GetHelp*",
+        "*Microsoft.Todos*",
+        
+        # Games
+        "*Microsoft.MicrosoftSolitaireCollection*",
+        "*Microsoft.MicrosoftMahjong*",
+        "*Microsoft.FreshPaint*",
+        "*Microsoft.NetworkSpeedTest*",
+        "*Microsoft.MSPaint*",
+        
+        # Third-party bloatware (common on OEM systems)
+        "*CandyCrush*",
+        "*BubbleWitch*",
+        "*Wunderlist*",
+        "*Flipboard*",
+        "*Twitter*",
+        "*Facebook*",
+        "*Spotify*",
+        "*Minecraft*",
+        "*Royal Revolt*",
+        "*Sway*",
+        "*Speed Test*",
+        "*Dolby*",
+        "*Drawboard*",
+        "*Microsoft.Advertising*",
+        
+        # Windows 11 specific
+        "*Microsoft.Todos*",
+        "*Microsoft.PowerAutomateDesktop*",
+        "*MicrosoftTeams*",
+        "*Microsoft.549981C3F5F10*",  # Cortana
+        "*Microsoft.Windows.DevHome*"
     )
     
-    foreach ($app in $bloatwareApps) {
+    # Apps to explicitly protect from removal (useful applications)
+    $protectedApps = @(
+        "*Microsoft.RemoteDesktop*",           # Remote Desktop Connection
+        "*Microsoft.DesktopAppInstaller*",    # winget/App Installer
+        "*Microsoft.StorePurchaseApp*",       # Microsoft Store
+        "*Microsoft.WindowsStore*",           # Microsoft Store
+        "*Microsoft.WindowsCalculator*",      # Calculator
+        "*Microsoft.WindowsNotepad*",         # Notepad
+        "*Microsoft.Paint*",                  # Paint
+        "*Microsoft.ScreenSketch*",           # Snipping Tool
+        "*Microsoft.Windows.Photos*",         # Photos app
+        "*Microsoft.WindowsSoundRecorder*",   # Voice Recorder (useful)
+        "*Microsoft.WindowsTerminal*",        # Windows Terminal
+        "*Microsoft.PowerShell*",             # PowerShell
+        "*Microsoft.VCLibs*",                 # Visual C++ Runtime
+        "*Microsoft.NET*",                    # .NET Runtime
+        "*Microsoft.WindowsAppRuntime*"       # Windows App Runtime
+    )
+    
+    $removedCount = 0
+    $totalApps = 0
+    
+    Write-Log "Scanning for bloatware applications..." "INFO"
+    
+    foreach ($appPattern in $bloatwareApps) {
         try {
-            Get-AppxPackage $app -AllUsers | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
-            Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $app | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
-            Write-Log "Removed $app" "INFO"
+            # Get all matching packages for current user
+            $packages = Get-AppxPackage -Name $appPattern -ErrorAction SilentlyContinue
+            foreach ($package in $packages) {
+                # Check if package is in protection list
+                $isProtected = $false
+                foreach ($protectedApp in $protectedApps) {
+                    if ($package.Name -like $protectedApp) {
+                        $isProtected = $true
+                        break
+                    }
+                }
+                
+                if ($isProtected) {
+                    Write-Log "⚠ Skipping protected app: $($package.Name)" "INFO"
+                    continue
+                }
+                
+                $totalApps++
+                try {
+                    Write-Log "Attempting to remove: $($package.Name)" "INFO"
+                    Remove-AppxPackage -Package $package.PackageFullName -ErrorAction Stop
+                    Write-Log "✓ Removed: $($package.Name)" "INFO"
+                    $removedCount++
+                } catch {
+                    Write-Log "✗ Failed to remove: $($package.Name) - $($_.Exception.Message)" "WARN"
+                }
+            }
+            
+            # Get all matching packages for all users
+            $allUserPackages = Get-AppxPackage -Name $appPattern -AllUsers -ErrorAction SilentlyContinue
+            foreach ($package in $allUserPackages) {
+                # Check if package is in protection list
+                $isProtected = $false
+                foreach ($protectedApp in $protectedApps) {
+                    if ($package.Name -like $protectedApp) {
+                        $isProtected = $true
+                        break
+                    }
+                }
+                
+                if ($isProtected) {
+                    continue
+                }
+                
+                try {
+                    Write-Log "Removing for all users: $($package.Name)" "INFO"
+                    Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                    $removedCount++
+                } catch {
+                    Write-Log "Failed to remove for all users: $($package.Name)" "WARN"
+                }
+            }
+            
+            # Remove provisioned packages (prevents reinstallation for new users)
+            $provisionedPackages = Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object DisplayName -like $appPattern
+            foreach ($package in $provisionedPackages) {
+                # Check if package is in protection list
+                $isProtected = $false
+                foreach ($protectedApp in $protectedApps) {
+                    if ($package.DisplayName -like $protectedApp) {
+                        $isProtected = $true
+                        break
+                    }
+                }
+                
+                if ($isProtected) {
+                    Write-Log "⚠ Skipping protected provisioned app: $($package.DisplayName)" "INFO"
+                    continue
+                }
+                
+                try {
+                    Write-Log "Removing provisioned package: $($package.DisplayName)" "INFO"
+                    Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop
+                    Write-Log "✓ Removed provisioned: $($package.DisplayName)" "INFO"
+                } catch {
+                    Write-Log "✗ Failed to remove provisioned: $($package.DisplayName)" "WARN"
+                }
+            }
+            
         } catch {
-            Write-Log "Could not remove $app" "WARN"
+            Write-Log "Error processing pattern $appPattern`: $($_.Exception.Message)" "WARN"
         }
+    }
+    
+    # Additional cleanup for Windows 11 specific bloatware
+    try {
+        Write-Log "Performing additional Windows 11 cleanup..." "INFO"
+        
+        # Remove Chat (Teams consumer)
+        $chatApp = Get-AppxPackage -Name "*Teams*" -ErrorAction SilentlyContinue
+        if ($chatApp) {
+            Remove-AppxPackage -Package $chatApp.PackageFullName -ErrorAction SilentlyContinue
+            Write-Log "Removed Microsoft Teams Chat" "INFO"
+        }
+        
+        # Disable Windows 11 suggestions and ads
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338393Enabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-353694Enabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-353696Enabled" /t REG_DWORD /d 0 /f | Out-Null
+        Write-Log "Disabled Windows suggestions and ads" "INFO"
+        
+    } catch {
+        Write-Log "Additional cleanup failed: $($_.Exception.Message)" "WARN"
+    }
+    
+    Write-Log "Bloatware removal completed. Processed $totalApps apps, successfully removed $removedCount items." "INFO"
+    
+    if ($removedCount -eq 0) {
+        Write-Log "No bloatware found to remove (already clean or packages protected)" "INFO"
     }
 }
 
 # Function to apply system customizations
 function Apply-SystemCustomizations {
     Write-Log "Applying system customizations..." "INFO"
-    
-    # Enable dark mode
+    # Enable dark mode (user choice)
     try {
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f | Out-Null
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f | Out-Null
-        Write-Log "Dark mode enabled" "INFO"
+        if ($EnableDarkMode) {
+            reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f | Out-Null
+            reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f | Out-Null
+            Write-Log "Dark mode enabled" "INFO"
+        } else {
+            reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 1 /f | Out-Null
+            reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 1 /f | Out-Null
+            Write-Log "Dark mode disabled (light mode enabled)" "INFO"
+        }
     } catch {
-        Write-Log "Could not enable dark mode" "WARN"
+        Write-Log "Could not set dark mode" "WARN"
     }
-    
-    # File Explorer enhancements
+    # File Explorer enhancements (user choices)
     try {
-        # Show file extensions
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d 0 /f | Out-Null
-        # Show hidden files
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d 1 /f | Out-Null
-        # Show system files
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden /t REG_DWORD /d 1 /f | Out-Null
+        # Show/hide file extensions
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d $([int](-not $ShowFileExtensions)) /f | Out-Null
+        # Show/hide hidden files
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Hidden /t REG_DWORD /d $([int]$ShowHiddenFiles) /f | Out-Null
+        # Show/hide system files
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowSuperHidden /t REG_DWORD /d $([int]$ShowSystemFiles) /f | Out-Null
         Write-Log "File Explorer enhancements applied" "INFO"
     } catch {
         Write-Log "Could not apply File Explorer enhancements" "WARN"
     }
-    
-    # Taskbar modifications
+    # Taskbar modifications (user choices)
     try {
-        # Hide search box
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search" /v SearchboxTaskbarMode /t REG_DWORD /d 0 /f | Out-Null
-        # Hide task view button
-        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f | Out-Null
+        # Hide/show search box
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search" /v SearchboxTaskbarMode /t REG_DWORD /d $([int]$HideSearchBox) /f | Out-Null
+        # Hide/show task view button
+        reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d $([int](-not $HideTaskViewButton)) /f | Out-Null
         Write-Log "Taskbar modifications applied" "INFO"
     } catch {
         Write-Log "Could not apply taskbar modifications" "WARN"
@@ -271,24 +700,79 @@ function Apply-SystemCustomizations {
 
 Write-Log "Starting Automated Windows Computer Setup" "INFO"
 
-Write-Host ""
+
+# =====================
+# ABOUT THIS SCRIPT
+# =====================
 Write-Host "======== AUTOMATED WINDOWS SETUP SCRIPT ========" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "This script will:" -ForegroundColor Yellow
 Write-Host "  • Install PowerShell 7 (Always)" -ForegroundColor White
 Write-Host "  • Enable Windows Features for virtualization (Always)" -ForegroundColor White
 Write-Host "  • Setup WSL (Always)" -ForegroundColor White
-Write-Host "  • Configure power settings (Always)" -ForegroundColor White
+Write-Host "  • Configure power settings (user-defined)" -ForegroundColor White
 Write-Host "  • Check for existing installations and skip if found" -ForegroundColor Green
 Write-Host "  • Install applications based on selected categories:" -ForegroundColor Yellow
+Write-Host ""
+
+# =====================
+# CATEGORY SELECTION
+# =====================
+$selectedCategories = Get-CategoryChoices
+Write-Log "Selected categories: $($selectedCategories -join ', ')" "INFO"
+
+# =====================
+# USER OPTIONS
+# =====================
+# Power timeouts
+function Get-PowerTimeout {
+    param(
+        [string]$Prompt,
+        [int]$Default
+    )
+    $input = Read-Host "$Prompt [$Default]"
+    if ([string]::IsNullOrWhiteSpace($input)) {
+        return $Default
+    }
+    if ($input -match '^[0-9]+$') {
+        return [int]$input
+    } else {
+        Write-Host "Invalid input. Using default: $Default" -ForegroundColor Yellow
+        return $Default
+    }
+}
+$MonitorTimeoutAC = Get-PowerTimeout "Enter monitor timeout (AC, minutes, 10=Default)" 10
+$MonitorTimeoutDC = Get-PowerTimeout "Enter monitor timeout (DC, minutes, 10=Default)" 10
+$StandbyTimeoutAC = Get-PowerTimeout "Enter standby timeout (AC, minutes, 10=Default)" 10
+$StandbyTimeoutDC = Get-PowerTimeout "Enter standby timeout (DC, minutes, 10=Default)" 10
+
+# System customizations
+$EnableDarkMode = Get-YesNo 'Enable dark mode?' $true
+$ShowFileExtensions = Get-YesNo 'Show file extensions in File Explorer?' $true
+$ShowHiddenFiles = Get-YesNo 'Show hidden files in File Explorer?' $true
+$ShowSystemFiles = Get-YesNo 'Show system files in File Explorer?' $true
+$HideSearchBox = Get-YesNo 'Hide search box on taskbar?' $true
+$HideTaskViewButton = Get-YesNo 'Hide task view button on taskbar?' $true
+$PinAppsToTaskbar = Get-YesNo 'Pin installed apps to taskbar?' $true
+
+# Bloatware removal
+$RemoveBloatware = Get-YesNo 'Remove default bloatware apps?' $true
+
+# OpenSSH
+$EnableOpenSSHClient = Get-YesNo 'Enable OpenSSH Client?' $true
+$EnableOpenSSHServer = Get-YesNo 'Enable OpenSSH Server?' $false
+
+# WSL Distributions
+$InstallUbuntuWSL = Get-YesNo 'Install Ubuntu WSL distribution?' $true
+$InstallKaliWSL = Get-YesNo 'Install Kali Linux WSL distribution?' $false
+
+# =====================
+# FINAL CONFIRMATION
+# =====================
 Write-Host ""
 Write-Host "Press any key to continue or Ctrl+C to cancel..." -ForegroundColor Yellow
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 Write-Host ""
-
-# Get user category selections
-$selectedCategories = Get-CategoryChoices
-Write-Log "Selected categories: $($selectedCategories -join ', ')" "INFO"
 
 # =============================================================================
 # SECTION 0: Category-Based Installations
@@ -407,7 +891,7 @@ if ($selectedCategories.Count -gt 0) {
         }
         
         # Ubuntu WSL distribution
-        if (-not (Test-WSLDistributionInstalled "Ubuntu")) {
+        if ($InstallUbuntuWSL -and -not (Test-WSLDistributionInstalled "Ubuntu")) {
             Write-Log "Installing Ubuntu WSL distribution..." "INFO"
             wsl --install -d Ubuntu --no-launch
             Test-CommandSuccess $LASTEXITCODE "Ubuntu Installation"
@@ -431,8 +915,8 @@ if ($selectedCategories.Count -gt 0) {
         }
         
         # GIMP
-        if (-not (Test-WingetPackageInstalled "GIMP.GIMP")) {
-            winget install --id GIMP.GIMP --source winget -e --accept-package-agreements --accept-source-agreements
+        if (-not (Test-WingetPackageInstalled "GIMP.GIMP.3")) {
+            winget install --id GIMP.GIMP.3 --source winget -e --accept-package-agreements --accept-source-agreements
             Test-CommandSuccess $LASTEXITCODE "GIMP Installation"
         }
         
@@ -471,8 +955,80 @@ if ($selectedCategories.Count -gt 0) {
             Test-CommandSuccess $LASTEXITCODE "OpenVPN Installation"
         }
         
+        # Burp Suite Community Edition (Web Application Security Testing)
+        if (-not (Test-WingetPackageInstalled "PortSwigger.BurpSuite.Community")) {
+            winget install --id PortSwigger.BurpSuite.Community --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Burp Suite Community Installation"
+        }
+        
+        # OWASP ZAP (Web Application Scanner)
+        if (-not (Test-WingetPackageInstalled "ZAP.ZAP")) {
+            winget install --id ZAP.ZAP --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "OWASP ZAP Installation"
+        }
+        
+        # Bitwarden (Password Manager)
+        if (-not (Test-WingetPackageInstalled "Bitwarden.Bitwarden")) {
+            winget install --id Bitwarden.Bitwarden --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Bitwarden Installation"
+        }
+        
+        # KeePass (Local Password Database)
+        if (-not (Test-WingetPackageInstalled "DominikReichl.KeePass")) {
+            winget install --id DominikReichl.KeePass --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "KeePass Installation"
+        }
+        
+        # VeraCrypt (Disk Encryption)
+        if (-not (Test-WingetPackageInstalled "IDRIX.VeraCrypt")) {
+            winget install --id IDRIX.VeraCrypt --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "VeraCrypt Installation"
+        }
+        
+        # GnuPG (Email and File Encryption)
+        if (-not (Test-WingetPackageInstalled "GnuPG.Gpg4win")) {
+            winget install --id GnuPG.Gpg4win --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Gpg4win Installation"
+        }
+        
+        # Process Monitor (System Monitoring)
+        if (-not (Test-WingetPackageInstalled "Microsoft.Sysinternals.ProcessMonitor")) {
+            winget install --id Microsoft.Sysinternals.ProcessMonitor --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Process Monitor Installation"
+        }
+        
+        # Process Explorer (Advanced Task Manager)
+        if (-not (Test-WingetPackageInstalled "Microsoft.Sysinternals.ProcessExplorer")) {
+            winget install --id Microsoft.Sysinternals.ProcessExplorer --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Process Explorer Installation"
+        }
+        
+        # Autoruns (Startup Program Manager)
+        if (-not (Test-WingetPackageInstalled "Microsoft.Sysinternals.Autoruns")) {
+            winget install --id Microsoft.Sysinternals.Autoruns --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Autoruns Installation"
+        }
+        
+        # Angry IP Scanner (Network Scanner)
+        if (-not (Test-WingetPackageInstalled "angryziber.AngryIPScanner")) {
+            winget install --id angryziber.AngryIPScanner --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Angry IP Scanner Installation"
+        }
+        
+        # Advanced IP Scanner (Network Discovery)
+        if (-not (Test-WingetPackageInstalled "Famatech.AdvancedIPScanner")) {
+            winget install --id Famatech.AdvancedIPScanner --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Advanced IP Scanner Installation"
+        }
+        
+        # Tor Browser (Anonymous Web Browsing)
+        if (-not (Test-WingetPackageInstalled "TorProject.TorBrowser")) {
+            winget install --id TorProject.TorBrowser --source winget -e --accept-package-agreements --accept-source-agreements
+            Test-CommandSuccess $LASTEXITCODE "Tor Browser Installation"
+        }
+        
         # Kali Linux WSL distribution
-        if (-not (Test-WSLDistributionInstalled "kali-linux")) {
+        if ($InstallKaliWSL -and -not (Test-WSLDistributionInstalled "kali-linux")) {
             Write-Log "Installing Kali Linux WSL distribution..." "INFO"
             wsl --install -d Kali-Linux --no-launch
             Test-CommandSuccess $LASTEXITCODE "Kali Linux Installation"
@@ -546,22 +1102,21 @@ if (-not (Test-WSLInstalled)) {
 # =============================================================================
 Write-Log "Configuring power settings..." "INFO"
 
-# Expected Output: No output if successful
-# Options: -change monitor-timeout-ac/dc <minutes>, -change standby-timeout-ac/dc <minutes>
-Write-Log "Setting monitor timeout (AC) to never..." "INFO"
-powercfg -change monitor-timeout-ac 0
+# Use user-selected values for power timeouts
+Write-Log "Setting monitor timeout (AC) to $MonitorTimeoutAC minutes..." "INFO"
+powercfg -change monitor-timeout-ac $MonitorTimeoutAC
 Test-CommandSuccess $LASTEXITCODE "Monitor Timeout AC"
 
-Write-Log "Setting monitor timeout (DC) to 10 minutes..." "INFO"
-powercfg -change monitor-timeout-dc 10
+Write-Log "Setting monitor timeout (DC) to $MonitorTimeoutDC minutes..." "INFO"
+powercfg -change monitor-timeout-dc $MonitorTimeoutDC
 Test-CommandSuccess $LASTEXITCODE "Monitor Timeout DC"
 
-Write-Log "Setting standby timeout (AC) to never..." "INFO"
-powercfg -change standby-timeout-ac 0
+Write-Log "Setting standby timeout (AC) to $StandbyTimeoutAC minutes..." "INFO"
+powercfg -change standby-timeout-ac $StandbyTimeoutAC
 Test-CommandSuccess $LASTEXITCODE "Standby Timeout AC"
 
-Write-Log "Setting standby timeout (DC) to never..." "INFO"
-powercfg -change standby-timeout-dc 0
+Write-Log "Setting standby timeout (DC) to $StandbyTimeoutDC minutes..." "INFO"
+powercfg -change standby-timeout-dc $StandbyTimeoutDC
 Test-CommandSuccess $LASTEXITCODE "Standby Timeout DC"
 
 # =============================================================================
@@ -604,6 +1159,24 @@ if (Test-NodeInstalled) {
 }
 
 # =============================================================================
+# TASKBAR CONFIGURATION
+# =============================================================================
+if ($PinAppsToTaskbar) {
+    Write-Host ""
+    Write-Host "==================== TASKBAR CONFIGURATION ====================" -ForegroundColor Cyan
+    Write-Host ""
+    
+    # Add a small delay to ensure applications are fully installed
+    Write-Log "Waiting for applications to be fully registered..." "INFO"
+    Start-Sleep -Seconds 3
+    
+    Add-InstalledAppsToTaskbar $selectedCategories
+    Write-Log "Taskbar configuration completed" "INFO"
+} else {
+    Write-Log "Skipping taskbar app pinning (user choice)" "INFO"
+}
+
+# =============================================================================
 # COMPLETION AND NEXT STEPS
 # =============================================================================
 Write-Log "Automated setup completed!" "INFO"
@@ -635,7 +1208,10 @@ if ('C' -in $selectedCategories) {
 }
 if ('S' -in $selectedCategories) {
     Write-Host "  ✓ Security Category:" -ForegroundColor Green
-    Write-Host "    - Malwarebytes, Wireshark, Nmap, OpenVPN, Kali Linux WSL" -ForegroundColor White
+    Write-Host "    - Malwarebytes, Wireshark, Nmap, OpenVPN, Burp Suite" -ForegroundColor White
+    Write-Host "    - OWASP ZAP, Bitwarden, KeePass, VeraCrypt, Gpg4win" -ForegroundColor White
+    Write-Host "    - Process Monitor, Process Explorer, Autoruns, Network Scanners" -ForegroundColor White
+    Write-Host "    - Tor Browser, Kali Linux WSL" -ForegroundColor White
 }
 
 # Show WSL status
@@ -695,6 +1271,18 @@ if ('S' -in $selectedCategories) {
     $installedApps += "Wireshark (WiresharkFoundation.Wireshark)"
     $installedApps += "Nmap (Insecure.Nmap)"
     $installedApps += "OpenVPN Connect (OpenVPNTechnologies.OpenVPNConnect)"
+    $installedApps += "Burp Suite Community (PortSwigger.BurpSuite.Community)"
+    $installedApps += "OWASP ZAP (ZAP.ZAP)"
+    $installedApps += "Bitwarden (Bitwarden.Bitwarden)"
+    $installedApps += "KeePass (DominikReichl.KeePass)"
+    $installedApps += "VeraCrypt (IDRIX.VeraCrypt)"
+    $installedApps += "Gpg4win (GnuPG.Gpg4win)"
+    $installedApps += "Process Monitor (Microsoft.Sysinternals.ProcessMonitor)"
+    $installedApps += "Process Explorer (Microsoft.Sysinternals.ProcessExplorer)"
+    $installedApps += "Autoruns (Microsoft.Sysinternals.Autoruns)"
+    $installedApps += "Angry IP Scanner (angryziber.AngryIPScanner)"
+    $installedApps += "Advanced IP Scanner (Famatech.AdvancedIPScanner)"
+    $installedApps += "Tor Browser (TorProject.TorBrowser)"
     $installedApps += "Kali Linux WSL Distribution"
 }
 

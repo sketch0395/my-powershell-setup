@@ -7,10 +7,10 @@ This document provides a comprehensive list of all applications available in the
 | Category | Applications Count | Primary Use Case |
 |----------|-------------------|------------------|
 | Essential | 5 | Core system utilities and productivity |
-| Developer | 10 | Programming and development tools |
+| Developer | 11 | Programming and development tools |
 | Creative | 4 | Media creation and design tools |
 | Security | 16 | Cybersecurity and privacy tools |
-| **Total** | **35** | **Complete Windows setup** |
+| **Total** | **36** | **Complete Windows setup** |
 
 ---
 

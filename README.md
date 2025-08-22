@@ -23,9 +23,12 @@ Test script syntax before running:
 ```
 my-powershell/
 ├── Setup-Automation.ps1         # Main interactive setup script
+├── Setup-Automation-Clean.ps1   # Clean version (no WSL/Kali)
 ├── Test-Syntax.ps1              # Script validation utility
 ├── README.md                    # This documentation
 ├── COMMAND-REFERENCE.md         # Detailed command examples
+├── APPLICATION-CATALOG.md       # Complete application reference guide
+├── BLOATWARE-REMOVAL-CATALOG.md # Detailed bloatware removal documentation
 ├── ENHANCEMENT-IDEAS.md         # Future improvement suggestions
 └── setup-summary.log           # Installation log (generated)
 ```
@@ -34,14 +37,21 @@ my-powershell/
 
 This script automates the installation and configuration of:
 
-### Core Tools
-- **PowerShell 7** - Latest PowerShell version
-- **Windows Terminal** - Modern terminal application
-- **Visual Studio Code** - Code editor
-- **Git & GitHub Desktop** - Version control tools
-- **Docker Desktop** - Containerization platform
-- **Node.js & npm** - JavaScript runtime and package manager
-- **Obsidian** - Note-taking application
+### 📱 Application Categories (35+ Applications)
+- **Essential** (5 apps) - Core utilities like PowerToys, 7-Zip, VLC, TreeSize, Obsidian
+- **Developer** (12 apps) - Programming tools including VS Code, Git, Docker, Node.js, Python
+- **Creative** (4 apps) - Media & design tools like Figma, OBS Studio, GIMP, Discord
+- **Security** (16 apps) - Privacy & security tools including Malwarebytes, Wireshark, Burp Suite, Bitwarden
+
+### 🛡️ System Cleanup & Security
+- **Bloatware Removal** - Removes 50+ Windows bloatware apps while protecting 14 essential applications
+- **Registry Optimization** - Disables Windows ads, suggestions, and promotional content
+- **Privacy Settings** - Enhanced privacy configuration for Windows 10/11
+
+### 🎯 Smart Taskbar Management
+- **Automatic App Pinning** - Pins installed applications to taskbar based on selected categories
+- **Organized Workflow** - Essential tools readily accessible for improved productivity
+- **Category-Based Pinning** - Different apps pinned based on user type (Student/Developer/Creative/Security)
 
 ### Windows Features
 - **Hyper-V** - Virtualization platform

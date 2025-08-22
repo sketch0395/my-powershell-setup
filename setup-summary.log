@@ -1,5 +1,5 @@
 Windows Automated Setup Summary
-Generated: 08/22/2025 17:45:57
+Generated: 08/22/2025 18:10:38
 
 Selected Categories: E, D, C, S
 
@@ -30,6 +30,18 @@ Installed Applications:
 - Wireshark (WiresharkFoundation.Wireshark)
 - Nmap (Insecure.Nmap)
 - OpenVPN Connect (OpenVPNTechnologies.OpenVPNConnect)
+- Burp Suite Community (PortSwigger.BurpSuite.Community)
+- OWASP ZAP (ZAP.ZAP)
+- Bitwarden (Bitwarden.Bitwarden)
+- KeePass (DominikReichl.KeePass)
+- VeraCrypt (IDRIX.VeraCrypt)
+- Gpg4win (GnuPG.Gpg4win)
+- Process Monitor (Microsoft.Sysinternals.ProcessMonitor)
+- Process Explorer (Microsoft.Sysinternals.ProcessExplorer)
+- Autoruns (Microsoft.Sysinternals.Autoruns)
+- Angry IP Scanner (angryziber.AngryIPScanner)
+- Advanced IP Scanner (Famatech.AdvancedIPScanner)
+- Tor Browser (TorProject.TorBrowser)
 - Kali Linux WSL Distribution
 
 Enabled Windows Features:

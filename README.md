@@ -60,35 +60,51 @@ This script automates the installation and configuration of:
 - **Hypervisor Platform** - Hardware virtualization
 
 ### Linux Distributions
-- **Kali Linux** - Penetration testing distribution
-- **Ubuntu** - Popular Linux distribution
-- **Kali Web Tools** - Web security testing tools
+- **Ubuntu** - Popular Linux distribution for development
+- **Kali Linux** - Penetration testing distribution for security professionals
 
 ### System Configuration
 - **Power Settings** - Optimized for development work
 - **PowerShell Execution Policy** - Configured for development
 - **Environment Variables** - Refreshed for new installations
 - **Taskbar Customization** - Pin installed apps to taskbar for easy access
+- **System Cleanup** - Remove Windows bloatware while protecting essential applications
 
 ## � User Categories
 
 ### 🎓 Students & General Users
 Perfect for students, researchers, and general users who need:
+- **Essential Tools** - PowerToys, 7-Zip, VLC, TreeSize for daily computing tasks
+- **Note-Taking** - Obsidian for organized study notes and knowledge management
+- **Clean System** - Bloatware removal for better performance and privacy
 - **Modern Terminal** - Windows Terminal for better command-line experience
-- **Code Editor** - Visual Studio Code for assignments and projects
-- **Version Control** - Git for project management and collaboration
-- **Note-Taking** - Obsidian for organized study notes and documentation
-- **Linux Environment** - WSL with Ubuntu for cross-platform development
-- **Basic Development** - Node.js for web development coursework
-- **Containerization** - Docker for learning modern deployment practices
+- **Code Editor** - Visual Studio Code for assignments and light programming
+- **Cross-Platform** - WSL with Ubuntu for learning Linux alongside Windows
 
-### 💼 Professional Developers
+### � Professional Developers  
 Comprehensive toolkit for professional development including:
-- **Advanced Virtualization** - Hyper-V for enterprise environments
-- **Security Testing** - Kali Linux for cybersecurity professionals
-- **GitHub Integration** - GitHub Desktop for team collaboration
-- **Multiple Distributions** - Various Linux environments for testing
-- **Power User Settings** - Optimized system configuration for productivity
+- **Full Dev Stack** - VS Code, Git, GitHub Desktop, Docker, Node.js, Python
+- **Advanced Tools** - Postman, Notepad++, Chocolatey package manager
+- **Virtualization** - Hyper-V and WSL for enterprise development environments
+- **Taskbar Organization** - Development tools automatically pinned for quick access
+- **Version Control** - Complete Git ecosystem with desktop and command-line tools
+
+### 🎨 Creative Professionals
+Specialized tools for content creators and designers:
+- **Design Tools** - Figma for UI/UX design and prototyping
+- **Media Production** - OBS Studio for streaming and screen recording
+- **Image Editing** - GIMP for advanced photo manipulation
+- **Communication** - Discord for creative team collaboration
+- **Workflow Organization** - Creative apps pinned to taskbar for easy access
+
+### 🔒 Security Professionals & Enthusiasts  
+Comprehensive security toolkit with 16 specialized applications:
+- **Vulnerability Testing** - Burp Suite, OWASP ZAP, Nmap for penetration testing
+- **Network Analysis** - Wireshark, Angry IP Scanner, Advanced IP Scanner
+- **Privacy Tools** - Bitwarden, KeePass, VeraCrypt, Tor Browser
+- **System Monitoring** - Process Monitor, Process Explorer, Autoruns
+- **Malware Protection** - Malwarebytes for threat detection and removal
+- **Specialized Environment** - Kali Linux WSL for security research
 
 ### 🏢 Enterprise/Team Setup
 Suitable for organizational deployment with:
@@ -356,6 +372,8 @@ Check these files for detailed installation results and debugging information.
 
 ### Related Files
 - **[COMMAND-REFERENCE.md](COMMAND-REFERENCE.md)** - Detailed command examples and expected outputs
+- **[APPLICATION-CATALOG.md](APPLICATION-CATALOG.md)** - Complete reference guide for all 35+ applications across 4 categories
+- **[BLOATWARE-REMOVAL-CATALOG.md](BLOATWARE-REMOVAL-CATALOG.md)** - Comprehensive documentation of bloatware removal process, including 50+ removed apps and 14 protected applications
 - **[ENHANCEMENT-IDEAS.md](ENHANCEMENT-IDEAS.md)** - Future improvement suggestions and common customizations
 - **[Test-Syntax.ps1](Test-Syntax.ps1)** - Script validation utility
 
@@ -399,26 +417,44 @@ wsl --install -d Alpine
 After successful completion, you'll have:
 
 ### 🎓 Student/General User Benefits
-- ✅ **Modern Development Environment** - VS Code, Git, and Node.js ready
-- ✅ **Cross-Platform Experience** - Linux (Ubuntu) alongside Windows
-- ✅ **Organized Workflow** - Obsidian for note-taking and project documentation
-- ✅ **Industry-Standard Tools** - Docker for learning containerization
+- ✅ **Essential Utilities** - PowerToys, 7-Zip, VLC, TreeSize for daily computing
+- ✅ **Knowledge Management** - Obsidian for organized note-taking and documentation
+- ✅ **Clean System** - 50+ bloatware apps removed while protecting 14 essential applications
+- ✅ **Modern Development** - VS Code, Git, and Node.js ready for coursework
+- ✅ **Cross-Platform** - Linux (Ubuntu) alongside Windows via WSL
 - ✅ **Enhanced Terminal** - Windows Terminal for better command-line experience
 
-### 💼 Professional Developer Benefits
-- ✅ **Complete Virtualization Stack** - Hyper-V, WSL, and Docker ready
-- ✅ **Security Testing Environment** - Kali Linux with penetration testing tools
-- ✅ **Team Collaboration Tools** - GitHub Desktop and Git configured
-- ✅ **Multiple Linux Distributions** - Ubuntu and Kali for diverse development needs
-- ✅ **Optimized System Settings** - Power and environment configurations
+### � Professional Developer Benefits
+- ✅ **Complete Dev Environment** - Full stack with 12 development tools installed
+- ✅ **Virtualization Stack** - Hyper-V, WSL, and Docker ready for enterprise development
+- ✅ **Version Control** - Git ecosystem with GitHub Desktop for team collaboration
+- ✅ **Package Managers** - winget, npm, apt, and Chocolatey configured
+- ✅ **Taskbar Organization** - Development tools automatically pinned for quick access
+- ✅ **Advanced Tools** - Postman, multiple text editors, and containerization platform
+
+### 🎨 Creative Professional Benefits
+- ✅ **Design Toolkit** - Figma for UI/UX design and prototyping
+- ✅ **Media Production** - OBS Studio for streaming and content creation
+- ✅ **Image Editing** - GIMP for advanced photo manipulation and design work
+- ✅ **Team Communication** - Discord for creative collaboration
+- ✅ **Workflow Optimization** - Creative apps pinned to taskbar for easy access
+
+### 🔒 Security Professional Benefits
+- ✅ **Penetration Testing** - Burp Suite, OWASP ZAP, Nmap for vulnerability assessment
+- ✅ **Network Analysis** - Wireshark and multiple network scanners
+- ✅ **Privacy Protection** - Bitwarden, KeePass, VeraCrypt, Tor Browser
+- ✅ **System Monitoring** - Process Monitor, Process Explorer, Autoruns
+- ✅ **Specialized Environment** - Kali Linux WSL for security research
+- ✅ **Malware Protection** - Malwarebytes for threat detection and removal
 
 ### 🏢 Universal Benefits
-- ✅ **10+ Development Tools** installed and configured
-- ✅ **4 Windows Features** enabled for virtualization
-- ✅ **2 Linux Distributions** ready for use
-- ✅ **Power Settings** optimized for development
-- ✅ **Package Managers** (winget, npm, apt) configured
-- ✅ **Development Environment** ready for coding
+- ✅ **35+ Applications** installed across 4 specialized categories
+- ✅ **4 Windows Features** enabled for virtualization and development
+- ✅ **2 Linux Distributions** (Ubuntu + Kali) ready for use
+- ✅ **Bloatware Cleanup** - System optimized with unnecessary apps removed
+- ✅ **Taskbar Organization** - Relevant tools pinned based on selected categories
+- ✅ **Privacy Enhanced** - Windows tracking and promotional content disabled
+- ✅ **Development Ready** - Complete environment for coding and system administration
 
 ## 🤝 Contributing
 

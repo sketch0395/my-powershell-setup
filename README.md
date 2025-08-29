@@ -4,7 +4,13 @@ A comprehensive PowerShell script that automate### 💻 Professional Developers
 Comprehensive toolkit for professional development including:
 - **Full Dev Stack** - VS Code, Git, GitHub Desktop, Docker, Node.js, Python
 - **Advanced Tools** - Postman, Notepad++, Chocolatey, Windows Terminal, Firefox Dev Edition
-- **Virtualization** - Hyper-V and WSL for enterprise development environments
+- **Virtualization** - Hyper-V and WSL for en### Related Files
+- **[COMMAND-REFERENCE.md](COMMAND-REFERENCE.md)** - Detailed command examples and expected outputs
+- **[APPLICATION-CATALOG.md](APPLICATION-CATALOG.md)** - Complete reference guide for all 36+ applications across 4 categories
+- **[BLOATWARE-REMOVAL-CATALOG.md](BLOATWARE-REMOVAL-CATALOG.md)** - Comprehensive documentation of bloatware removal process, including 50+ removed apps and 14 protected applications
+- **[ENHANCEMENT-IDEAS.md](ENHANCEMENT-IDEAS.md)** - Future improvement suggestions and common customizations
+- **[Test-Syntax.ps1](Test-Syntax.ps1)** - Script validation utility
+- **[Test-VersionCheck.ps1](Test-VersionCheck.ps1)** - PowerShell version compatibility testse development environments
 ### 💻 Professional Developer Benefits
 - ✅ **Complete Dev Environment** - Full stack with 11 development tools installed
 - ✅ **Virtualization Stack** - Hyper-V, WSL, and Docker ready for enterprise development
@@ -37,6 +43,7 @@ my-powershell/
 ├── Setup-Automation.ps1         # Main interactive setup script
 ├── Setup-Automation-Clean.ps1   # Clean version (no WSL/Kali)
 ├── Test-Syntax.ps1              # Script validation utility
+├── Test-VersionCheck.ps1        # PowerShell version check test utility
 ├── README.md                    # This documentation
 ├── COMMAND-REFERENCE.md         # Detailed command examples
 ├── APPLICATION-CATALOG.md       # Complete application reference guide
@@ -125,8 +132,9 @@ Suitable for organizational deployment with:
 - **Collaboration Tools** - Git, GitHub Desktop, and modern terminal
 - **Scalable Configuration** - Easy to customize for organizational needs
 
-## �📋 Prerequisites
+## 📋 Prerequisites
 
+- **PowerShell 7.5.2 or higher** (Required - script will check and prompt for update)
 - **Windows 10/11** (Build 1903 or higher for WSL 2)
 - **Administrator privileges** (script requires elevation)
 - **Internet connection** for downloading packages
@@ -338,6 +346,17 @@ docker --version
 ## 🐛 Troubleshooting
 
 ### Common Issues and Solutions
+
+#### **PowerShell Version Error**
+If you see "POWERSHELL VERSION REQUIREMENT ERROR":
+```powershell
+# Update PowerShell using one of these methods:
+winget install Microsoft.PowerShell
+# Or download from: https://github.com/PowerShell/PowerShell/releases
+# Or install from Microsoft Store
+```
+- Script requires PowerShell 7.5.2+ for optimal compatibility
+- Older versions may have missing features or command incompatibilities
 
 #### **"Execution Policy" Error**
 ```powershell

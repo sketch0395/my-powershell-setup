@@ -1,5 +1,61 @@
 # =====================
-# UTILITY FUNCTIONS (MUST BE FIRST)
+# POWERSHELL VERSION CHECK (MUST BE FIRST)
+# =====================
+
+# Basic Write-Log function for early use
+function Write-Log {
+    param(
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    $color = switch ($Level) {
+        "INFO" { "Green" }
+        "WARN" { "Yellow" }
+        "ERROR" { "Red" }
+        default { "White" }
+    }
+    Write-Host "[$Level] $Message" -ForegroundColor $color
+}
+
+# Check if PowerShell version is 7.5.2 or higher
+$requiredVersion = [Version]"7.5.2"
+$currentVersion = $PSVersionTable.PSVersion
+
+if ($currentVersion -lt $requiredVersion) {
+    Write-Host "===============================================" -ForegroundColor Red
+    Write-Host "     POWERSHELL VERSION REQUIREMENT ERROR     " -ForegroundColor Red
+    Write-Host "===============================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Current PowerShell Version: $currentVersion" -ForegroundColor Yellow
+    Write-Host "Required Version: $requiredVersion or higher" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "This script requires PowerShell 7.5.2 or higher to run properly." -ForegroundColor White
+    Write-Host "Some features and commands may not work correctly with older versions." -ForegroundColor White
+    Write-Host ""
+    Write-Host "To update PowerShell:" -ForegroundColor Cyan
+    Write-Host "1. Download from: https://github.com/PowerShell/PowerShell/releases" -ForegroundColor White
+    Write-Host "2. Or use winget: winget install Microsoft.PowerShell" -ForegroundColor White
+    Write-Host "3. Or use the Microsoft Store" -ForegroundColor White
+    Write-Host ""
+    
+    # Prompt user to continue or exit
+    $choice = Read-Host "Do you want to continue anyway? (Not recommended) [y/N]"
+    if ($choice.ToLower() -ne 'y') {
+        Write-Host "Script execution cancelled. Please update PowerShell and try again." -ForegroundColor Yellow
+        exit 1
+    }
+    
+    Write-Host ""
+    Write-Host "⚠️  WARNING: Continuing with unsupported PowerShell version!" -ForegroundColor Red
+    Write-Host "Some features may not work correctly." -ForegroundColor Yellow
+    Write-Host ""
+    Start-Sleep -Seconds 3
+} else {
+    Write-Log "PowerShell Version Check: $currentVersion (Compatible)" "INFO"
+}
+
+# =====================
+# UTILITY FUNCTIONS
 # =====================
 function Test-CommandSuccess {
     param(
@@ -234,21 +290,8 @@ function Get-YesNo {
 }
 
 # =====================
-# FUNCTION DEFINITIONS (MUST BE FIRST)
+# FUNCTION DEFINITIONS
 # =====================
-function Write-Log {
-    param(
-        [string]$Message,
-        [string]$Level = "INFO"
-    )
-    $color = switch ($Level) {
-        "INFO" { "Green" }
-        "WARN" { "Yellow" }
-        "ERROR" { "Red" }
-        default { "White" }
-    }
-    Write-Host "[$Level] $Message" -ForegroundColor $color
-}
 
 function Get-CategoryChoices {
     Write-Host ""
